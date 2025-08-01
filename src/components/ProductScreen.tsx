@@ -6,10 +6,7 @@ interface ProductScreenProps {
 }
 
 const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
-  const [machineId, setMachineId] = useState<string | null>(null);
-  const [machineToken, setMachineToken] = useState<string | null>(null);
-
-  // Initialize machine check-in hook
+  // Initialize machine check-in hook first
   const {
     checkin,
     isCheckingIn,
@@ -20,6 +17,10 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
     intervalMinutes: 5,
     enabled: true,
   });
+
+  // State for machine credentials
+  const [machineId, setMachineId] = useState<string | null>(null);
+  const [machineToken, setMachineToken] = useState<string | null>(null);
 
   useEffect(() => {
     // Load machine credentials from localStorage
@@ -50,6 +51,7 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
   };
 
   const formatUptime = (minutes: number): string => {
+    if (isNaN(minutes) || minutes < 0) return '0h 0m';
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;
@@ -171,6 +173,7 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
             <div>Check-in Interval: 5 minutes</div>
             <div>Auto Check-in: Enabled</div>
             <div>Last Successful: {lastSuccessfulCheckin?.toISOString() || 'Never'}</div>
+            <div>Development Mode: {import.meta.env.DEV ? 'Yes' : 'No'}</div>
           </div>
         </div>
 

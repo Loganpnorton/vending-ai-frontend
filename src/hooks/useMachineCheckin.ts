@@ -44,7 +44,8 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
   // Calculate uptime in minutes
   const getUptimeMinutes = useCallback((): number => {
     const uptimeMs = Date.now() - uptimeStartRef.current;
-    return Math.floor(uptimeMs / (1000 * 60));
+    const minutes = Math.floor(uptimeMs / (1000 * 60));
+    return Math.max(0, minutes); // Ensure non-negative
   }, []);
 
   // Generate status data
@@ -77,6 +78,20 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
       };
 
       console.log('🔄 Performing machine check-in...', payload);
+
+      // Check if we're in development mode (no API endpoint)
+      const isDevelopment = import.meta.env.DEV;
+      
+      if (isDevelopment) {
+        // Simulate successful check-in in development
+        console.log('🔄 Development mode: Simulating successful check-in');
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+        
+        setLastSuccessfulCheckin(new Date());
+        localStorage.setItem('last_successful_checkin', new Date().toISOString());
+        console.log('✅ Check-in successful (simulated)');
+        return true;
+      }
 
       const response = await fetch('/api/machine-checkin', {
         method: 'POST',
