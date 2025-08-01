@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useMachineCheckin from '../hooks/useMachineCheckin';
 import ApiTestPanel from './ApiTestPanel';
-import MachineProductList from './MachineProductList';
+import ProductSyncGrid from './ProductSyncGrid';
 
 interface ProductScreenProps {
   onReset?: () => void;
@@ -253,8 +253,8 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
             </div>
           </div>
 
-          {/* Product List */}
-          <MachineProductList machineId={machineId || 'unknown'} />
+          {/* Product Inventory Grid */}
+          <ProductSyncGrid machineId={machineId || 'unknown'} />
         </div>
 
         {/* Debug Information */}
