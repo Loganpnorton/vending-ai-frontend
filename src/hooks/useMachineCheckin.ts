@@ -1,23 +1,28 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface StatusData {
+  name?: string;
+  location?: string;
   battery: number;
   stock_level: number;
   temperature: number;
   errors: string[];
   uptime_minutes: number;
+  last_maintenance?: string;
 }
 
 interface CheckinPayload {
   machine_id: string;
   status: StatusData;
+  auto_register?: boolean;
+  machine_token?: string;
 }
 
 interface UseMachineCheckinOptions {
   intervalMinutes?: number;
   enabled?: boolean;
   baseUrl?: string;
-  authToken?: string;
+  autoRegister?: boolean;
 }
 
 const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
@@ -25,25 +30,30 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
     intervalMinutes = 5, 
     enabled = true,
     baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://your-domain.com',
-    authToken = localStorage.getItem('auth_token') || ''
+    autoRegister = true
   } = options;
   
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [lastSuccessfulCheckin, setLastSuccessfulCheckin] = useState<Date | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [machineToken, setMachineToken] = useState<string | null>(null);
   const uptimeStartRef = useRef<number>(Date.now());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get machine credentials from localStorage
-  const getMachineCredentials = useCallback((): { machine_id: string } | null => {
+  const getMachineCredentials = useCallback((): { machine_id: string; machine_token?: string } | null => {
     const machineId = localStorage.getItem('machine_id');
+    const storedToken = localStorage.getItem('machine_token');
     
     if (!machineId) {
       console.log('❌ No machine ID found in localStorage');
       return null;
     }
     
-    return { machine_id: machineId };
+    return { 
+      machine_id: machineId,
+      machine_token: storedToken || undefined
+    };
   }, []);
 
   // Calculate uptime in minutes
@@ -56,11 +66,14 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
   // Generate status data
   const generateStatusData = useCallback((): StatusData => {
     return {
+      name: `Vending Machine ${localStorage.getItem('machine_id') || 'Unknown'}`,
+      location: 'Main Lobby', // Could be configurable
       battery: 100, // Hardcoded for now
       stock_level: 0, // Stub - could be calculated from product data
       temperature: 37, // Stub temperature
       errors: [], // Empty unless real error logic is implemented
       uptime_minutes: getUptimeMinutes(),
+      last_maintenance: new Date().toISOString().split('T')[0], // Today's date
     };
   }, [getUptimeMinutes]);
 
@@ -72,12 +85,6 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
       return false;
     }
 
-    if (!authToken) {
-      console.log('❌ Check-in failed: No authentication token');
-      setLastError('Authentication token required');
-      return false;
-    }
-
     setIsCheckingIn(true);
     setLastError(null);
 
@@ -86,12 +93,18 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
       const payload: CheckinPayload = {
         machine_id: credentials.machine_id,
         status: statusData,
+        auto_register: autoRegister,
       };
+
+      // Add machine token if available
+      if (credentials.machine_token) {
+        payload.machine_token = credentials.machine_token;
+      }
 
       console.log('🔄 Performing machine check-in...');
       console.log('📦 Payload:', JSON.stringify(payload, null, 2));
-      console.log('🔑 Auth Token:', authToken ? `${authToken.substring(0, 8)}...` : 'None');
       console.log('🌐 Base URL:', baseUrl);
+      console.log('🔧 Auto-register:', autoRegister);
 
       // Check if we're in development mode (no API endpoint)
       const isDevelopment = import.meta.env.DEV;
@@ -101,9 +114,15 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
         console.log('🔄 Development mode: Simulating successful check-in');
         await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
         
+        // Simulate receiving a machine token from auto-registration
+        const simulatedToken = 'dev_token_' + Date.now();
+        localStorage.setItem('machine_token', simulatedToken);
+        setMachineToken(simulatedToken);
+        
         setLastSuccessfulCheckin(new Date());
         localStorage.setItem('last_successful_checkin', new Date().toISOString());
         console.log('✅ Check-in successful (simulated)');
+        console.log('🔑 Received machine token:', simulatedToken);
         return true;
       }
 
@@ -111,7 +130,6 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify(payload),
       });
@@ -123,6 +141,13 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
 
       const result = await response.json();
       console.log('✅ Check-in successful:', result);
+      
+      // Store machine token if provided in response
+      if (result.machine?.machine_token) {
+        localStorage.setItem('machine_token', result.machine.machine_token);
+        setMachineToken(result.machine.machine_token);
+        console.log('🔑 Received machine token:', result.machine.machine_token);
+      }
       
       setLastSuccessfulCheckin(new Date());
       localStorage.setItem('last_successful_checkin', new Date().toISOString());
@@ -136,7 +161,7 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
     } finally {
       setIsCheckingIn(false);
     }
-  }, [getMachineCredentials, generateStatusData, authToken, baseUrl]);
+  }, [getMachineCredentials, generateStatusData, baseUrl, autoRegister]);
 
   // Manual check-in function
   const checkin = useCallback(async (): Promise<boolean> => {
@@ -172,11 +197,17 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
     };
   }, [enabled, intervalMinutes, performCheckin]);
 
-  // Load last successful check-in from localStorage on mount
+  // Load last successful check-in and machine token from localStorage on mount
   useEffect(() => {
     const lastCheckin = localStorage.getItem('last_successful_checkin');
+    const storedToken = localStorage.getItem('machine_token');
+    
     if (lastCheckin) {
       setLastSuccessfulCheckin(new Date(lastCheckin));
+    }
+    
+    if (storedToken) {
+      setMachineToken(storedToken);
     }
   }, []);
 
@@ -185,6 +216,7 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
     isCheckingIn,
     lastSuccessfulCheckin,
     lastError,
+    machineToken,
     uptimeMinutes: getUptimeMinutes(),
   };
 };

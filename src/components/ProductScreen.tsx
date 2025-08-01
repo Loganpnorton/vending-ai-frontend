@@ -8,7 +8,7 @@ interface ProductScreenProps {
 const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
   // State for machine credentials
   const [machineId, setMachineId] = useState<string | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [machineToken, setMachineToken] = useState<string | null>(null);
   const [apiBaseUrl, setApiBaseUrl] = useState<string>('');
 
   // Initialize machine check-in hook first
@@ -17,29 +17,37 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
     isCheckingIn,
     lastSuccessfulCheckin,
     lastError,
+    machineToken: hookMachineToken,
     uptimeMinutes,
   } = useMachineCheckin({
     intervalMinutes: 5,
     enabled: true,
     baseUrl: apiBaseUrl || import.meta.env.VITE_API_BASE_URL,
-    authToken: authToken || '',
+    autoRegister: true,
   });
 
   useEffect(() => {
     // Load machine credentials from localStorage
     const storedMachineId = localStorage.getItem('machine_id');
-    const storedAuthToken = localStorage.getItem('auth_token');
+    const storedMachineToken = localStorage.getItem('machine_token');
     const storedApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
     
     console.log('🔍 Loading machine credentials...');
     console.log('📱 Machine ID:', storedMachineId);
-    console.log('🔑 Auth Token:', storedAuthToken ? `${storedAuthToken.substring(0, 8)}...` : 'None');
+    console.log('🔑 Machine Token:', storedMachineToken ? `${storedMachineToken.substring(0, 8)}...` : 'None');
     console.log('🌐 API Base URL:', storedApiBaseUrl);
     
     setMachineId(storedMachineId);
-    setAuthToken(storedAuthToken);
+    setMachineToken(storedMachineToken);
     setApiBaseUrl(storedApiBaseUrl || '');
   }, []);
+
+  // Update machine token when hook receives it
+  useEffect(() => {
+    if (hookMachineToken) {
+      setMachineToken(hookMachineToken);
+    }
+  }, [hookMachineToken]);
 
   const handleReset = () => {
     localStorage.clear();
@@ -52,15 +60,6 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
       console.log('✅ Manual check-in successful');
     } else {
       console.log('❌ Manual check-in failed');
-    }
-  };
-
-  const handleSetAuthToken = () => {
-    const token = prompt('Enter your authentication token:');
-    if (token) {
-      localStorage.setItem('auth_token', token);
-      setAuthToken(token);
-      console.log('✅ Auth token set:', `${token.substring(0, 8)}...`);
     }
   };
 
@@ -121,11 +120,11 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
                 <span className="text-white font-mono text-sm">{machineId || 'Unknown'}</span>
               </div>
 
-              {/* Auth Token Status */}
+              {/* Machine Token Status */}
               <div className="flex justify-between items-center">
-                <span className="text-gray-300">Auth Token:</span>
-                <span className={`font-mono text-sm ${authToken ? 'text-green-400' : 'text-red-400'}`}>
-                  {authToken ? 'Present' : 'Missing'}
+                <span className="text-gray-300">Machine Token:</span>
+                <span className={`font-mono text-sm ${machineToken ? 'text-green-400' : 'text-yellow-400'}`}>
+                  {machineToken ? 'Present' : 'Auto-registering...'}
                 </span>
               </div>
 
@@ -135,6 +134,12 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
                 <span className="text-white font-mono text-sm">
                   {apiBaseUrl || 'Not configured'}
                 </span>
+              </div>
+
+              {/* Auto-Registration Status */}
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Auto-Registration:</span>
+                <span className="text-green-400 font-semibold">Enabled</span>
               </div>
 
               {/* Uptime */}
@@ -172,13 +177,6 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
 
             {/* Configuration Buttons */}
             <div className="mt-6 space-y-2">
-              <button
-                onClick={handleSetAuthToken}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200"
-              >
-                Set Auth Token
-              </button>
-              
               <button
                 onClick={handleSetApiUrl}
                 className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200"
@@ -240,8 +238,9 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
           <h3 className="text-lg font-semibold text-white mb-2">Debug Information</h3>
           <div className="text-xs text-gray-400 space-y-1">
             <div>Machine ID: {machineId || 'None'}</div>
-            <div>Auth Token: {authToken ? `${authToken.substring(0, 8)}...` : 'None'}</div>
+            <div>Machine Token: {machineToken ? `${machineToken.substring(0, 8)}...` : 'None'}</div>
             <div>API Base URL: {apiBaseUrl || 'Not configured'}</div>
+            <div>Auto-Registration: Enabled</div>
             <div>Check-in Interval: 5 minutes</div>
             <div>Auto Check-in: Enabled</div>
             <div>Last Successful: {lastSuccessfulCheckin?.toISOString() || 'Never'}</div>
