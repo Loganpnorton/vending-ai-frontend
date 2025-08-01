@@ -1,17 +1,6 @@
 import React from 'react';
 import useMachineProducts from '../hooks/useMachineProducts';
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  stock_level: number;
-  image_url?: string;
-  description?: string;
-  category?: string;
-  is_available: boolean;
-}
-
 interface MachineProductListProps {
   machineId: string;
   className?: string;
