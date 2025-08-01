@@ -116,6 +116,72 @@ const useMachineProducts = (options: UseMachineProductsOptions) => {
         const errorText = await response.text();
         console.error('❌ HTTP Error for products:', response.status, errorText);
         
+        // Check if it's a 405 (Method not allowed) - endpoint doesn't exist
+        if (response.status === 405) {
+          console.log('⚠️ Products endpoint not implemented yet - using mock data');
+          console.log('💡 Backend needs to implement POST /api/machine-products endpoint');
+          
+          // Provide mock products for development
+          const mockProducts: Product[] = [
+            {
+              id: '1',
+              name: 'Coca-Cola Classic',
+              price: 2.50,
+              stock_level: 15,
+              image_url: 'https://via.placeholder.com/64x64/ff0000/ffffff?text=CC',
+              description: 'Refreshing classic cola',
+              category: 'Beverages',
+              is_available: true
+            },
+            {
+              id: '2',
+              name: 'Doritos Nacho Cheese',
+              price: 1.75,
+              stock_level: 8,
+              image_url: 'https://via.placeholder.com/64x64/ff6b00/ffffff?text=DC',
+              description: 'Crunchy nacho cheese chips',
+              category: 'Snacks',
+              is_available: true
+            },
+            {
+              id: '3',
+              name: 'Snickers Bar',
+              price: 1.25,
+              stock_level: 3,
+              image_url: 'https://via.placeholder.com/64x64/8b4513/ffffff?text=SB',
+              description: 'Chocolate bar with caramel and peanuts',
+              category: 'Candy',
+              is_available: true
+            },
+            {
+              id: '4',
+              name: 'Bottled Water',
+              price: 1.00,
+              stock_level: 0,
+              image_url: 'https://via.placeholder.com/64x64/00bfff/ffffff?text=H2O',
+              description: 'Pure spring water',
+              category: 'Beverages',
+              is_available: false
+            },
+            {
+              id: '5',
+              name: 'Cheetos Puffs',
+              price: 1.50,
+              stock_level: 12,
+              image_url: 'https://via.placeholder.com/64x64/ffa500/ffffff?text=CP',
+              description: 'Cheesy puffed snacks',
+              category: 'Snacks',
+              is_available: true
+            }
+          ];
+          
+          setProducts(mockProducts);
+          setLastFetched(new Date());
+          console.log(`✅ Loaded ${mockProducts.length} mock products for machine ${machineId}`);
+          console.log('💡 To see real products, implement POST /api/machine-products on your backend');
+          return true;
+        }
+        
         // Detailed error logging
         const errorDetails = {
           status: response.status,

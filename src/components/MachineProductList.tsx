@@ -223,6 +223,11 @@ const MachineProductList: React.FC<MachineProductListProps> = ({
             <div>Products loaded: {products.length}</div>
             <div>Last fetched: {lastFetched?.toISOString() || 'Never'}</div>
             <div>Auto-refresh: Enabled (30s)</div>
+            {error?.includes('405') && (
+              <div className="mt-2 p-2 bg-yellow-600 text-yellow-100 rounded">
+                ⚠️ Using mock data - Backend endpoint not implemented yet
+              </div>
+            )}
           </div>
         )}
       </div>
