@@ -82,12 +82,16 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
     setLastError(null);
 
     try {
+      const statusData = generateStatusData();
       const payload: CheckinPayload = {
         machine_id: credentials.machine_id,
-        status: generateStatusData(),
+        status: statusData,
       };
 
-      console.log('🔄 Performing machine check-in...', payload);
+      console.log('🔄 Performing machine check-in...');
+      console.log('📦 Payload:', JSON.stringify(payload, null, 2));
+      console.log('🔑 Auth Token:', authToken ? `${authToken.substring(0, 8)}...` : 'None');
+      console.log('🌐 Base URL:', baseUrl);
 
       // Check if we're in development mode (no API endpoint)
       const isDevelopment = import.meta.env.DEV;

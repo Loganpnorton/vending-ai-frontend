@@ -31,6 +31,11 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
     const storedAuthToken = localStorage.getItem('auth_token');
     const storedApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
     
+    console.log('🔍 Loading machine credentials...');
+    console.log('📱 Machine ID:', storedMachineId);
+    console.log('🔑 Auth Token:', storedAuthToken ? `${storedAuthToken.substring(0, 8)}...` : 'None');
+    console.log('🌐 API Base URL:', storedApiBaseUrl);
+    
     setMachineId(storedMachineId);
     setAuthToken(storedAuthToken);
     setApiBaseUrl(storedApiBaseUrl || '');
@@ -47,6 +52,24 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
       console.log('✅ Manual check-in successful');
     } else {
       console.log('❌ Manual check-in failed');
+    }
+  };
+
+  const handleSetAuthToken = () => {
+    const token = prompt('Enter your authentication token:');
+    if (token) {
+      localStorage.setItem('auth_token', token);
+      setAuthToken(token);
+      console.log('✅ Auth token set:', `${token.substring(0, 8)}...`);
+    }
+  };
+
+  const handleSetApiUrl = () => {
+    const url = prompt('Enter your API base URL:', apiBaseUrl || 'https://your-domain.com');
+    if (url) {
+      localStorage.setItem('api_base_url', url);
+      setApiBaseUrl(url);
+      console.log('✅ API base URL set:', url);
     }
   };
 
@@ -147,12 +170,26 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
               )}
             </div>
 
-            {/* Manual Check-in Button */}
-            <div className="mt-6">
+            {/* Configuration Buttons */}
+            <div className="mt-6 space-y-2">
+              <button
+                onClick={handleSetAuthToken}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200"
+              >
+                Set Auth Token
+              </button>
+              
+              <button
+                onClick={handleSetApiUrl}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200"
+              >
+                Set API URL
+              </button>
+
               <button
                 onClick={handleManualCheckin}
                 disabled={isCheckingIn}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-semibold py-2 px-4 rounded-md transition duration-200 disabled:cursor-not-allowed"
+                className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 text-white font-semibold py-2 px-4 rounded-md transition duration-200 disabled:cursor-not-allowed"
               >
                 {isCheckingIn ? (
                   <div className="flex items-center justify-center">
