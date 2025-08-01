@@ -114,6 +114,7 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
       console.log('📦 Payload:', JSON.stringify(payload, null, 2));
       console.log('🌐 Base URL:', baseUrl);
       console.log('🔧 Auto-register:', autoRegister);
+      console.log('🎯 Full URL:', `${baseUrl}/api/machine-checkin`);
 
       // Check if we should use development mode
       if (shouldUseDevelopmentMode()) {

@@ -31,15 +31,18 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
     const storedMachineId = localStorage.getItem('machine_id');
     const storedMachineToken = localStorage.getItem('machine_token');
     const storedApiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://vending-ai-nexus.vercel.app';
+    const manuallySetApiUrl = localStorage.getItem('api_base_url');
     
     console.log('🔍 Loading machine credentials...');
     console.log('📱 Machine ID:', storedMachineId);
     console.log('🔑 Machine Token:', storedMachineToken ? `${storedMachineToken.substring(0, 8)}...` : 'None');
-    console.log('🌐 API Base URL:', storedApiBaseUrl);
+    console.log('🌐 Environment API Base URL:', storedApiBaseUrl);
+    console.log('🔧 Manually Set API URL:', manuallySetApiUrl);
+    console.log('🎯 Final API Base URL:', manuallySetApiUrl || storedApiBaseUrl);
     
     setMachineId(storedMachineId);
     setMachineToken(storedMachineToken);
-    setApiBaseUrl(storedApiBaseUrl);
+    setApiBaseUrl(manuallySetApiUrl || storedApiBaseUrl);
   }, []);
 
   // Update machine token when hook receives it
@@ -70,6 +73,13 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
       setApiBaseUrl(url);
       console.log('✅ API base URL set:', url);
     }
+  };
+
+  const handleResetApiUrl = () => {
+    localStorage.removeItem('api_base_url');
+    const defaultUrl = import.meta.env.VITE_API_BASE_URL || 'https://vending-ai-nexus.vercel.app';
+    setApiBaseUrl(defaultUrl);
+    console.log('✅ API base URL reset to default:', defaultUrl);
   };
 
   const formatTime = (date: Date | null): string => {
@@ -201,6 +211,13 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
               </button>
 
               <button
+                onClick={handleResetApiUrl}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200"
+              >
+                Reset API URL to Default
+              </button>
+
+              <button
                 onClick={handleManualCheckin}
                 disabled={isCheckingIn}
                 className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 text-white font-semibold py-2 px-4 rounded-md transition duration-200 disabled:cursor-not-allowed"
@@ -255,7 +272,9 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
           <div className="text-xs text-gray-400 space-y-1">
             <div>Machine ID: {machineId || 'None'}</div>
             <div>Machine Token: {machineToken ? `${machineToken.substring(0, 8)}...` : 'None'}</div>
-            <div>API Base URL: {apiBaseUrl || 'Not configured'}</div>
+            <div>Environment API URL: {import.meta.env.VITE_API_BASE_URL || 'Not set'}</div>
+            <div>Manual API URL: {localStorage.getItem('api_base_url') || 'Not set'}</div>
+            <div>Current API URL: {apiBaseUrl || 'Not configured'}</div>
             <div>Auto-Registration: Enabled</div>
             <div>Check-in Interval: 5 minutes</div>
             <div>Auto Check-in: Enabled</div>
