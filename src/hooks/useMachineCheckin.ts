@@ -29,7 +29,7 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
   const { 
     intervalMinutes = 5, 
     enabled = true,
-    baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://your-domain.com',
+    baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://vending-ai-nexus.vercel.app',
     autoRegister = true
   } = options;
   

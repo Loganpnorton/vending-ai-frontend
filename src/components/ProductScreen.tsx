@@ -22,7 +22,7 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
   } = useMachineCheckin({
     intervalMinutes: 5,
     enabled: true,
-    baseUrl: apiBaseUrl || import.meta.env.VITE_API_BASE_URL,
+    baseUrl: apiBaseUrl || import.meta.env.VITE_API_BASE_URL || 'https://vending-ai-nexus.vercel.app',
     autoRegister: true,
   });
 
@@ -30,7 +30,7 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
     // Load machine credentials from localStorage
     const storedMachineId = localStorage.getItem('machine_id');
     const storedMachineToken = localStorage.getItem('machine_token');
-    const storedApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+    const storedApiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://vending-ai-nexus.vercel.app';
     
     console.log('🔍 Loading machine credentials...');
     console.log('📱 Machine ID:', storedMachineId);
@@ -39,7 +39,7 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
     
     setMachineId(storedMachineId);
     setMachineToken(storedMachineToken);
-    setApiBaseUrl(storedApiBaseUrl || '');
+    setApiBaseUrl(storedApiBaseUrl);
   }, []);
 
   // Update machine token when hook receives it
@@ -64,7 +64,7 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
   };
 
   const handleSetApiUrl = () => {
-    const url = prompt('Enter your API base URL:', apiBaseUrl || 'https://your-domain.com');
+    const url = prompt('Enter your API base URL:', apiBaseUrl || 'https://vending-ai-nexus.vercel.app');
     if (url) {
       localStorage.setItem('api_base_url', url);
       setApiBaseUrl(url);
