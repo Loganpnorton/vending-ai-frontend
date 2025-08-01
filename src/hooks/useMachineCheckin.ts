@@ -10,17 +10,23 @@ interface StatusData {
 
 interface CheckinPayload {
   machine_id: string;
-  machine_token: string;
-  status_data: StatusData;
+  status: StatusData;
 }
 
 interface UseMachineCheckinOptions {
   intervalMinutes?: number;
   enabled?: boolean;
+  baseUrl?: string;
+  authToken?: string;
 }
 
 const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
-  const { intervalMinutes = 5, enabled = true } = options;
+  const { 
+    intervalMinutes = 5, 
+    enabled = true,
+    baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://your-domain.com',
+    authToken = localStorage.getItem('auth_token') || ''
+  } = options;
   
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [lastSuccessfulCheckin, setLastSuccessfulCheckin] = useState<Date | null>(null);
@@ -29,16 +35,15 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get machine credentials from localStorage
-  const getMachineCredentials = useCallback((): { machine_id: string; machine_token: string } | null => {
+  const getMachineCredentials = useCallback((): { machine_id: string } | null => {
     const machineId = localStorage.getItem('machine_id');
-    const machineToken = localStorage.getItem('machine_token');
     
-    if (!machineId || !machineToken) {
-      console.log('❌ No machine credentials found in localStorage');
+    if (!machineId) {
+      console.log('❌ No machine ID found in localStorage');
       return null;
     }
     
-    return { machine_id: machineId, machine_token: machineToken };
+    return { machine_id: machineId };
   }, []);
 
   // Calculate uptime in minutes
@@ -67,14 +72,19 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
       return false;
     }
 
+    if (!authToken) {
+      console.log('❌ Check-in failed: No authentication token');
+      setLastError('Authentication token required');
+      return false;
+    }
+
     setIsCheckingIn(true);
     setLastError(null);
 
     try {
       const payload: CheckinPayload = {
         machine_id: credentials.machine_id,
-        machine_token: credentials.machine_token,
-        status_data: generateStatusData(),
+        status: generateStatusData(),
       };
 
       console.log('🔄 Performing machine check-in...', payload);
@@ -82,7 +92,7 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
       // Check if we're in development mode (no API endpoint)
       const isDevelopment = import.meta.env.DEV;
       
-      if (isDevelopment) {
+      if (isDevelopment && !baseUrl.includes('your-domain.com')) {
         // Simulate successful check-in in development
         console.log('🔄 Development mode: Simulating successful check-in');
         await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
@@ -93,10 +103,11 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
         return true;
       }
 
-      const response = await fetch('/api/machine-checkin', {
+      const response = await fetch(`${baseUrl}/api/machine-checkin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify(payload),
       });
@@ -121,7 +132,7 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
     } finally {
       setIsCheckingIn(false);
     }
-  }, [getMachineCredentials, generateStatusData]);
+  }, [getMachineCredentials, generateStatusData, authToken, baseUrl]);
 
   // Manual check-in function
   const checkin = useCallback(async (): Promise<boolean> => {

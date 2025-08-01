@@ -6,6 +6,11 @@ interface ProductScreenProps {
 }
 
 const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
+  // State for machine credentials
+  const [machineId, setMachineId] = useState<string | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [apiBaseUrl, setApiBaseUrl] = useState<string>('');
+
   // Initialize machine check-in hook first
   const {
     checkin,
@@ -16,19 +21,19 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
   } = useMachineCheckin({
     intervalMinutes: 5,
     enabled: true,
+    baseUrl: apiBaseUrl || import.meta.env.VITE_API_BASE_URL,
+    authToken: authToken || '',
   });
-
-  // State for machine credentials
-  const [machineId, setMachineId] = useState<string | null>(null);
-  const [machineToken, setMachineToken] = useState<string | null>(null);
 
   useEffect(() => {
     // Load machine credentials from localStorage
     const storedMachineId = localStorage.getItem('machine_id');
-    const storedMachineToken = localStorage.getItem('machine_token');
+    const storedAuthToken = localStorage.getItem('auth_token');
+    const storedApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
     
     setMachineId(storedMachineId);
-    setMachineToken(storedMachineToken);
+    setAuthToken(storedAuthToken);
+    setApiBaseUrl(storedApiBaseUrl || '');
   }, []);
 
   const handleReset = () => {
@@ -57,6 +62,18 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
     return `${hours}h ${mins}m`;
   };
 
+  const getStatusColor = () => {
+    if (isCheckingIn) return 'text-yellow-400';
+    if (lastError) return 'text-red-400';
+    return 'text-green-400';
+  };
+
+  const getStatusText = () => {
+    if (isCheckingIn) return 'Checking in...';
+    if (lastError) return 'Error';
+    return 'Online';
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="max-w-4xl w-full">
@@ -81,6 +98,22 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
                 <span className="text-white font-mono text-sm">{machineId || 'Unknown'}</span>
               </div>
 
+              {/* Auth Token Status */}
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Auth Token:</span>
+                <span className={`font-mono text-sm ${authToken ? 'text-green-400' : 'text-red-400'}`}>
+                  {authToken ? 'Present' : 'Missing'}
+                </span>
+              </div>
+
+              {/* API Base URL */}
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">API Base URL:</span>
+                <span className="text-white font-mono text-sm">
+                  {apiBaseUrl || 'Not configured'}
+                </span>
+              </div>
+
               {/* Uptime */}
               <div className="flex justify-between items-center">
                 <span className="text-gray-300">Uptime:</span>
@@ -100,8 +133,8 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
                 <span className="text-gray-300">Status:</span>
                 <div className="flex items-center space-x-2">
                   <div className={`w-3 h-3 rounded-full ${isCheckingIn ? 'bg-yellow-500 animate-pulse' : lastError ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                  <span className={`text-sm ${isCheckingIn ? 'text-yellow-400' : lastError ? 'text-red-400' : 'text-green-400'}`}>
-                    {isCheckingIn ? 'Checking in...' : lastError ? 'Error' : 'Online'}
+                  <span className={`text-sm ${getStatusColor()}`}>
+                    {getStatusText()}
                   </span>
                 </div>
               </div>
@@ -169,7 +202,9 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
         <div className="mt-8 bg-gray-800 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-white mb-2">Debug Information</h3>
           <div className="text-xs text-gray-400 space-y-1">
-            <div>Machine Token: {machineToken ? `${machineToken.substring(0, 8)}...` : 'None'}</div>
+            <div>Machine ID: {machineId || 'None'}</div>
+            <div>Auth Token: {authToken ? `${authToken.substring(0, 8)}...` : 'None'}</div>
+            <div>API Base URL: {apiBaseUrl || 'Not configured'}</div>
             <div>Check-in Interval: 5 minutes</div>
             <div>Auto Check-in: Enabled</div>
             <div>Last Successful: {lastSuccessfulCheckin?.toISOString() || 'Never'}</div>
