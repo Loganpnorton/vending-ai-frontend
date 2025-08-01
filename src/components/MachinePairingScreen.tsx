@@ -65,17 +65,25 @@ const MachinePairingScreen: React.FC<MachinePairingScreenProps> = ({ onPairingCo
       setIsLoading(true);
       setError(null);
       
+      console.log('Calling create_pending_machine_link...');
       const { data, error } = await supabase.rpc('create_pending_machine_link');
+      
+      console.log('Supabase response:', { data, error });
       
       if (error) {
         throw new Error(error.message);
       }
       
-      if (data) {
-        setPairingData(data);
+      if (data && data.length > 0) {
+        console.log('Setting pairing data:', data[0]);
+        setPairingData(data[0]);
         setIsPolling(true);
+      } else {
+        console.log('No data returned from RPC');
+        setError('No pairing data returned from server');
       }
     } catch (err) {
+      console.error('Error creating pairing link:', err);
       setError(err instanceof Error ? err.message : 'Failed to create pairing code');
     } finally {
       setIsLoading(false);
@@ -106,25 +114,42 @@ const MachinePairingScreen: React.FC<MachinePairingScreenProps> = ({ onPairingCo
     }
 
     try {
+      console.log('Polling for pairing with code:', pairingData.pairing_code);
       const { data, error } = await supabase.rpc('get_machine_id_by_pairing_code', {
         code: pairingData.pairing_code
       });
+
+      console.log('Polling response:', { data, error });
 
       if (error) {
         console.error('Polling error:', error);
         return;
       }
 
-      if (data && data.machine_id && data.machine_token) {
-        // Store machine data in localStorage
-        localStorage.setItem('machine_id', data.machine_id);
-        localStorage.setItem('machine_token', data.machine_token);
+      // Check if we got a valid response with machine data
+      if (data && Array.isArray(data) && data.length > 0) {
+        const machineData = data[0];
+        console.log('Machine data received:', machineData);
         
-        // Stop polling
-        setIsPolling(false);
-        
-        // Notify parent component to switch to product screen
-        onPairingComplete?.();
+        if (machineData.machine_id && machineData.machine_token) {
+          console.log('✅ Pairing successful! Storing credentials...');
+          
+          // Store machine data in localStorage
+          localStorage.setItem('machine_id', machineData.machine_id);
+          localStorage.setItem('machine_token', machineData.machine_token);
+          
+          // Stop polling
+          setIsPolling(false);
+          
+          console.log('✅ Credentials stored, redirecting to product screen...');
+          
+          // Notify parent component to switch to product screen
+          onPairingComplete?.();
+        } else {
+          console.log('No machine data found yet, continuing to poll...');
+        }
+      } else {
+        console.log('No pairing data found yet, continuing to poll...');
       }
     } catch (err) {
       console.error('Polling failed:', err);
@@ -208,8 +233,12 @@ const MachinePairingScreen: React.FC<MachinePairingScreenProps> = ({ onPairingCo
             <h2 className="text-2xl font-semibold text-white mb-4">Pairing Code</h2>
             <div className="bg-gray-700 rounded-lg p-6 inline-block">
               <div className="text-6xl font-mono font-bold text-blue-400 tracking-wider">
-                {pairingData?.pairing_code}
+                {pairingData?.pairing_code || 'Loading...'}
               </div>
+            </div>
+            {/* Debug info */}
+            <div className="mt-2 text-xs text-gray-400">
+              Debug: pairingData = {JSON.stringify(pairingData)}
             </div>
           </div>
 
