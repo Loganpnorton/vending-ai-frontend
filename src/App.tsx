@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import MachinePairingScreen from './components/MachinePairingScreen';
 import ProductScreen from './components/ProductScreen';
 import './App.css';
@@ -15,11 +15,6 @@ function App() {
       setCurrentScreen('products');
     }
   }, []);
-
-  // Handle navigation between screens
-  const handleScreenChange = (screen: 'pairing' | 'products') => {
-    setCurrentScreen(screen);
-  };
 
   return (
     <div className="App">

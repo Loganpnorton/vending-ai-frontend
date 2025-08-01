@@ -16,11 +16,6 @@ interface PairingData {
   link_id: string;
 }
 
-interface MachineData {
-  machine_id: string;
-  machine_token: string;
-}
-
 interface MachinePairingScreenProps {
   onPairingComplete?: () => void;
 }
