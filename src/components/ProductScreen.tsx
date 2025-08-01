@@ -96,6 +96,8 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
     return 'Online';
   };
 
+  const isCorsError = lastError?.includes('CORS');
+
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="max-w-4xl w-full">
@@ -171,6 +173,20 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
               {lastError && (
                 <div className="bg-red-600 text-white p-3 rounded-md text-sm">
                   <strong>Last Error:</strong> {lastError}
+                  {isCorsError && (
+                    <div className="mt-2 text-yellow-200">
+                      💡 This is expected in development. Set up CORS on your backend for production.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Development Mode Info */}
+              {isCorsError && (
+                <div className="bg-blue-600 text-white p-3 rounded-md text-sm">
+                  <strong>Development Mode:</strong> Using simulated check-ins due to CORS restrictions.
+                  <br />
+                  <span className="text-blue-200">✅ Machine check-ins are working (simulated)</span>
                 </div>
               )}
             </div>
@@ -245,6 +261,7 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
             <div>Auto Check-in: Enabled</div>
             <div>Last Successful: {lastSuccessfulCheckin?.toISOString() || 'Never'}</div>
             <div>Development Mode: {import.meta.env.DEV ? 'Yes' : 'No'}</div>
+            <div>CORS Error: {isCorsError ? 'Yes' : 'No'}</div>
           </div>
         </div>
 

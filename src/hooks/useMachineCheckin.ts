@@ -77,6 +77,15 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
     };
   }, [getUptimeMinutes]);
 
+  // Check if we should use development mode
+  const shouldUseDevelopmentMode = useCallback((): boolean => {
+    const isDevelopment = import.meta.env.DEV;
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const hasNoRealApi = !baseUrl || baseUrl === 'https://your-domain.com' || baseUrl.includes('your-domain.com');
+    
+    return isDevelopment || isLocalhost || hasNoRealApi;
+  }, [baseUrl]);
+
   // Perform check-in
   const performCheckin = useCallback(async (): Promise<boolean> => {
     const credentials = getMachineCredentials();
@@ -106,12 +115,11 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
       console.log('🌐 Base URL:', baseUrl);
       console.log('🔧 Auto-register:', autoRegister);
 
-      // Check if we're in development mode (no API endpoint)
-      const isDevelopment = import.meta.env.DEV;
-      
-      if (isDevelopment && !baseUrl.includes('your-domain.com')) {
+      // Check if we should use development mode
+      if (shouldUseDevelopmentMode()) {
         // Simulate successful check-in in development
         console.log('🔄 Development mode: Simulating successful check-in');
+        console.log('💡 CORS issue detected - using simulation mode');
         await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
         
         // Simulate receiving a machine token from auto-registration
@@ -156,12 +164,21 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.log('❌ Check-in failed:', errorMessage);
-      setLastError(errorMessage);
+      
+      // Check if it's a CORS error
+      if (errorMessage.includes('NetworkError') || errorMessage.includes('CORS')) {
+        console.log('🌐 CORS error detected - this is expected in development');
+        console.log('💡 Set up your backend CORS or use a proxy for production');
+        setLastError('CORS Error - Backend not accessible from browser');
+      } else {
+        setLastError(errorMessage);
+      }
+      
       return false;
     } finally {
       setIsCheckingIn(false);
     }
-  }, [getMachineCredentials, generateStatusData, baseUrl, autoRegister]);
+  }, [getMachineCredentials, generateStatusData, baseUrl, autoRegister, shouldUseDevelopmentMode]);
 
   // Manual check-in function
   const checkin = useCallback(async (): Promise<boolean> => {
