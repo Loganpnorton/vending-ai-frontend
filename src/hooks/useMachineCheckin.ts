@@ -1,4 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client for auth
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 interface StatusData {
   name?: string;
@@ -23,6 +31,7 @@ interface UseMachineCheckinOptions {
   enabled?: boolean;
   baseUrl?: string;
   autoRegister?: boolean;
+  maxRetries?: number;
 }
 
 const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
@@ -30,13 +39,15 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
     intervalMinutes = 5, 
     enabled = true,
     baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://vending-ai-nexus.vercel.app',
-    autoRegister = true
+    autoRegister = true,
+    maxRetries = 3
   } = options;
   
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [lastSuccessfulCheckin, setLastSuccessfulCheckin] = useState<Date | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   const [machineToken, setMachineToken] = useState<string | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const uptimeStartRef = useRef<number>(Date.now());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -54,6 +65,35 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
       machine_id: machineId,
       machine_token: storedToken || undefined
     };
+  }, []);
+
+  // Get Supabase auth token
+  const getAuthToken = useCallback(async (): Promise<string | null> => {
+    if (!supabase) {
+      console.log('⚠️ No Supabase client available for auth');
+      return null;
+    }
+
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('❌ Error getting auth session:', error);
+        return null;
+      }
+
+      if (session?.access_token) {
+        console.log('✅ Auth token retrieved successfully');
+        setAuthToken(session.access_token);
+        return session.access_token;
+      } else {
+        console.log('⚠️ No active auth session found');
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ Error retrieving auth token:', error);
+      return null;
+    }
   }, []);
 
   // Calculate uptime in minutes
@@ -86,8 +126,8 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
     return isDevelopment || isLocalhost || hasNoRealApi;
   }, [baseUrl]);
 
-  // Perform check-in
-  const performCheckin = useCallback(async (): Promise<boolean> => {
+  // Perform check-in with retry logic
+  const performCheckin = useCallback(async (retryCount = 0): Promise<boolean> => {
     const credentials = getMachineCredentials();
     if (!credentials) {
       console.log('❌ Check-in failed: No machine credentials');
@@ -115,6 +155,7 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
       console.log('🌐 Base URL:', baseUrl);
       console.log('🔧 Auto-register:', autoRegister);
       console.log('🎯 Full URL:', `${baseUrl}/api/machine-checkin`);
+      console.log('🔄 Retry attempt:', retryCount + 1);
 
       // Check if we should use development mode
       if (shouldUseDevelopmentMode()) {
@@ -135,16 +176,58 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
         return true;
       }
 
+      // Get auth token for the request
+      const authToken = await getAuthToken();
+      
+      // Prepare headers
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add auth token if available
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+        console.log('🔐 Including auth token in request');
+      } else {
+        console.log('⚠️ No auth token available - proceeding without authentication');
+      }
+
+      console.log('📤 Sending request with headers:', headers);
+
       const response = await fetch(`${baseUrl}/api/machine-checkin`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(payload),
       });
 
+      console.log('📥 Response status:', response.status);
+      console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('❌ HTTP Error:', response.status, errorText);
+        
+        // Detailed error logging
+        const errorDetails = {
+          status: response.status,
+          statusText: response.statusText,
+          url: `${baseUrl}/api/machine-checkin`,
+          headers: Object.fromEntries(response.headers.entries()),
+          body: errorText,
+          retryCount,
+          maxRetries
+        };
+        
+        console.error('🔍 Detailed error info:', errorDetails);
+        
+        // Retry logic for certain status codes
+        if (retryCount < maxRetries && (response.status === 429 || response.status >= 500)) {
+          const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+          console.log(`🔄 Retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return performCheckin(retryCount + 1);
+        }
+        
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
@@ -166,8 +249,19 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.log('❌ Check-in failed:', errorMessage);
       
+      // Detailed error logging
+      console.error('🔍 Error details:', {
+        error: errorMessage,
+        baseUrl,
+        retryCount,
+        maxRetries,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        location: window.location.href
+      });
+      
       // Check if it's a CORS error
-      if (errorMessage.includes('NetworkError') || errorMessage.includes('CORS')) {
+      if (errorMessage.includes('NetworkError') || errorMessage.includes('CORS') || errorMessage.includes('Failed to fetch')) {
         console.log('🌐 CORS error detected - this is expected in development');
         console.log('💡 Set up your backend CORS or use a proxy for production');
         setLastError('CORS Error - Backend not accessible from browser');
@@ -179,7 +273,7 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
     } finally {
       setIsCheckingIn(false);
     }
-  }, [getMachineCredentials, generateStatusData, baseUrl, autoRegister, shouldUseDevelopmentMode]);
+  }, [getMachineCredentials, generateStatusData, baseUrl, autoRegister, shouldUseDevelopmentMode, getAuthToken, maxRetries]);
 
   // Manual check-in function
   const checkin = useCallback(async (): Promise<boolean> => {
@@ -235,6 +329,7 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
     lastSuccessfulCheckin,
     lastError,
     machineToken,
+    authToken,
     uptimeMinutes: getUptimeMinutes(),
   };
 };

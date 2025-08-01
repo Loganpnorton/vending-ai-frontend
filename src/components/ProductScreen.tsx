@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useMachineCheckin from '../hooks/useMachineCheckin';
+import ApiTestPanel from './ApiTestPanel';
 
 interface ProductScreenProps {
   onReset?: () => void;
@@ -10,6 +11,7 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
   const [machineId, setMachineId] = useState<string | null>(null);
   const [machineToken, setMachineToken] = useState<string | null>(null);
   const [apiBaseUrl, setApiBaseUrl] = useState<string>('');
+  const [showApiTestPanel, setShowApiTestPanel] = useState(false);
 
   // Initialize machine check-in hook first
   const {
@@ -18,6 +20,7 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
     lastSuccessfulCheckin,
     lastError,
     machineToken: hookMachineToken,
+    authToken,
     uptimeMinutes,
   } = useMachineCheckin({
     intervalMinutes: 5,
@@ -140,6 +143,14 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
                 </span>
               </div>
 
+              {/* Auth Token Status */}
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Auth Token:</span>
+                <span className={`font-mono text-sm ${authToken ? 'text-green-400' : 'text-yellow-400'}`}>
+                  {authToken ? 'Present' : 'Not available'}
+                </span>
+              </div>
+
               {/* API Base URL */}
               <div className="flex justify-between items-center">
                 <span className="text-gray-300">API Base URL:</span>
@@ -231,6 +242,13 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
                   'Manual Check-in'
                 )}
               </button>
+
+              <button
+                onClick={() => setShowApiTestPanel(true)}
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200"
+              >
+                Test API Connection
+              </button>
             </div>
           </div>
 
@@ -269,19 +287,22 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
         {/* Debug Information */}
         <div className="mt-8 bg-gray-800 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-white mb-2">Debug Information</h3>
-          <div className="text-xs text-gray-400 space-y-1">
-            <div>Machine ID: {machineId || 'None'}</div>
-            <div>Machine Token: {machineToken ? `${machineToken.substring(0, 8)}...` : 'None'}</div>
-            <div>Environment API URL: {import.meta.env.VITE_API_BASE_URL || 'Not set'}</div>
-            <div>Manual API URL: {localStorage.getItem('api_base_url') || 'Not set'}</div>
-            <div>Current API URL: {apiBaseUrl || 'Not configured'}</div>
-            <div>Auto-Registration: Enabled</div>
-            <div>Check-in Interval: 5 minutes</div>
-            <div>Auto Check-in: Enabled</div>
-            <div>Last Successful: {lastSuccessfulCheckin?.toISOString() || 'Never'}</div>
-            <div>Development Mode: {import.meta.env.DEV ? 'Yes' : 'No'}</div>
-            <div>CORS Error: {isCorsError ? 'Yes' : 'No'}</div>
-          </div>
+                      <div className="text-xs text-gray-400 space-y-1">
+              <div>Machine ID: {machineId || 'None'}</div>
+              <div>Machine Token: {machineToken ? `${machineToken.substring(0, 8)}...` : 'None'}</div>
+              <div>Auth Token: {authToken ? `${authToken.substring(0, 8)}...` : 'None'}</div>
+              <div>Environment API URL: {import.meta.env.VITE_API_BASE_URL || 'Not set'}</div>
+              <div>Manual API URL: {localStorage.getItem('api_base_url') || 'Not set'}</div>
+              <div>Current API URL: {apiBaseUrl || 'Not configured'}</div>
+              <div>Auto-Registration: Enabled</div>
+              <div>Check-in Interval: 5 minutes</div>
+              <div>Auto Check-in: Enabled</div>
+              <div>Last Successful: {lastSuccessfulCheckin?.toISOString() || 'Never'}</div>
+              <div>Development Mode: {import.meta.env.DEV ? 'Yes' : 'No'}</div>
+              <div>CORS Error: {isCorsError ? 'Yes' : 'No'}</div>
+              <div>Supabase URL: {import.meta.env.VITE_SUPABASE_URL ? 'Configured' : 'Not set'}</div>
+              <div>Supabase Key: {import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Configured' : 'Not set'}</div>
+            </div>
         </div>
 
         {/* Reset Button */}
@@ -294,6 +315,11 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
           </button>
         </div>
       </div>
+
+      {/* API Test Panel */}
+      {showApiTestPanel && (
+        <ApiTestPanel onClose={() => setShowApiTestPanel(false)} />
+      )}
     </div>
   );
 };
