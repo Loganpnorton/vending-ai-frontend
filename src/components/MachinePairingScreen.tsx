@@ -18,9 +18,13 @@ interface PairingData {
 
 interface MachinePairingScreenProps {
   onPairingComplete?: () => void;
+  initialPairingCode?: string | null;
 }
 
-const MachinePairingScreen: React.FC<MachinePairingScreenProps> = ({ onPairingComplete }) => {
+const MachinePairingScreen: React.FC<MachinePairingScreenProps> = ({ 
+  onPairingComplete, 
+  initialPairingCode 
+}) => {
   const [pairingData, setPairingData] = useState<PairingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -160,9 +164,19 @@ const MachinePairingScreen: React.FC<MachinePairingScreenProps> = ({ onPairingCo
   // Initialize component
   useEffect(() => {
     if (!checkExistingPairing()) {
-      createPendingMachineLink();
+      // If we have an initial pairing code from deep link, use it
+      if (initialPairingCode) {
+        setPairingData({
+          pairing_code: initialPairingCode,
+          link_id: 'deep-link-id'
+        });
+        setIsPolling(true);
+        setIsLoading(false);
+      } else {
+        createPendingMachineLink();
+      }
     }
-  }, [checkExistingPairing, createPendingMachineLink]);
+  }, [checkExistingPairing, createPendingMachineLink, initialPairingCode]);
 
   // Set up polling
   useEffect(() => {
@@ -217,6 +231,11 @@ const MachinePairingScreen: React.FC<MachinePairingScreenProps> = ({ onPairingCo
           {!supabase && (
             <div className="mt-4 bg-yellow-600 text-white px-4 py-2 rounded-lg inline-block">
               <span className="font-semibold">Demo Mode:</span> No Supabase credentials configured
+            </div>
+          )}
+          {initialPairingCode && (
+            <div className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg inline-block">
+              <span className="font-semibold">Deep Link:</span> Using pairing code {initialPairingCode}
             </div>
           )}
         </div>
