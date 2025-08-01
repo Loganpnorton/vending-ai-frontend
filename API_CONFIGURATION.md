@@ -62,6 +62,40 @@ Authorization: Bearer <supabase_access_token>  # Optional but recommended
 }
 ```
 
+### POST /api/machine-products
+
+**Request Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer <supabase_access_token>  # Optional but recommended
+```
+
+**Request Body:**
+```json
+{
+  "machine_id": "string"
+}
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "products": [
+    {
+      "id": "string",
+      "name": "string",
+      "price": 2.50,
+      "stock_level": 10,
+      "image_url": "https://example.com/image.jpg",  # Optional
+      "description": "string",  # Optional
+      "category": "string",  # Optional
+      "is_available": true
+    }
+  ]
+}
+```
+
 ## Authentication Flow
 
 1. **User Authentication**: The frontend uses Supabase for user authentication

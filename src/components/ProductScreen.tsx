@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useMachineCheckin from '../hooks/useMachineCheckin';
 import ApiTestPanel from './ApiTestPanel';
+import MachineProductList from './MachineProductList';
 
 interface ProductScreenProps {
   onReset?: () => void;
@@ -252,36 +253,8 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
             </div>
           </div>
 
-          {/* Product Display (Placeholder) */}
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-2xl font-semibold text-white mb-4">Products</h2>
-            
-            <div className="space-y-4">
-              <div className="bg-gray-700 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-white mb-2">Sample Product</h3>
-                <p className="text-gray-300 text-sm mb-2">A delicious beverage</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-green-400 font-bold">$2.50</span>
-                  <span className="text-gray-400 text-sm">In Stock</span>
-                </div>
-              </div>
-
-              <div className="bg-gray-700 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-white mb-2">Another Product</h3>
-                <p className="text-gray-300 text-sm mb-2">A tasty snack</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-green-400 font-bold">$1.75</span>
-                  <span className="text-gray-400 text-sm">In Stock</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 text-center">
-              <p className="text-gray-400 text-sm">
-                Product selection and purchase functionality coming soon...
-              </p>
-            </div>
-          </div>
+          {/* Product List */}
+          <MachineProductList machineId={machineId || 'unknown'} />
         </div>
 
         {/* Debug Information */}
