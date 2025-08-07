@@ -26,6 +26,7 @@ interface UserMachineProduct {
 
 interface UserMachineProductsResponse {
   success: boolean;
+  error?: string;
   machine: {
     id: string;
     name: string;
