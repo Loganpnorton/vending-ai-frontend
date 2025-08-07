@@ -26,7 +26,7 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
   } = useMachineCheckin({
     intervalMinutes: 5,
     enabled: true,
-    baseUrl: apiBaseUrl || import.meta.env.VITE_API_BASE_URL || 'https://vending-ai-nexus.vercel.app',
+            baseUrl: apiBaseUrl || import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5175' : 'https://vending-ai-nexus.vercel.app'),
     autoRegister: true,
   });
 
@@ -34,7 +34,7 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
     // Load machine credentials from localStorage
     const storedMachineId = localStorage.getItem('machine_id');
     const storedMachineToken = localStorage.getItem('machine_token');
-    const storedApiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://vending-ai-nexus.vercel.app';
+    const storedApiBaseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5175' : 'https://vending-ai-nexus.vercel.app');
     const manuallySetApiUrl = localStorage.getItem('api_base_url');
     
     console.log('🔍 Loading machine credentials...');
@@ -81,7 +81,7 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
 
   const handleResetApiUrl = () => {
     localStorage.removeItem('api_base_url');
-    const defaultUrl = import.meta.env.VITE_API_BASE_URL || 'https://vending-ai-nexus.vercel.app';
+    const defaultUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5175' : 'https://vending-ai-nexus.vercel.app');
     setApiBaseUrl(defaultUrl);
     console.log('✅ API base URL reset to default:', defaultUrl);
   };
@@ -264,7 +264,7 @@ const ProductScreen: React.FC<ProductScreenProps> = ({ onReset }) => {
               <div>Machine ID: {machineId || 'None'}</div>
               <div>Machine Token: {machineToken ? `${machineToken.substring(0, 8)}...` : 'None'}</div>
               <div>Auth Token: {authToken ? `${authToken.substring(0, 8)}...` : 'None'}</div>
-              <div>Environment API URL: {import.meta.env.VITE_API_BASE_URL || 'Not set'}</div>
+              <div>Environment API URL: {import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5175' : 'https://vending-ai-nexus.vercel.app')}</div>
               <div>Manual API URL: {localStorage.getItem('api_base_url') || 'Not set'}</div>
               <div>Current API URL: {apiBaseUrl || 'Not configured'}</div>
               <div>Auto-Registration: Enabled</div>

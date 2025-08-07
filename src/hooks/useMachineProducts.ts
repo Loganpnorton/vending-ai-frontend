@@ -29,7 +29,7 @@ interface UseMachineProductsOptions {
 const useMachineProducts = (options: UseMachineProductsOptions) => {
   const { 
     machineId,
-    baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://vending-ai-nexus.vercel.app',
+    baseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5175' : 'https://vending-ai-nexus.vercel.app'),
     autoRefresh = true,
     refreshInterval = 30 // 30 seconds default
   } = options;

@@ -38,7 +38,7 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
   const { 
     intervalMinutes = 5, 
     enabled = true,
-    baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://vending-ai-nexus.vercel.app',
+    baseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5175' : 'https://vending-ai-nexus.vercel.app'),
     autoRegister = true,
     maxRetries = 3
   } = options;
