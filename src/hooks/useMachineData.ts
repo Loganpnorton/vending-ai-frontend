@@ -56,6 +56,13 @@ const useMachineData = (options: UseMachineDataOptions): MachineData => {
       return false;
     }
 
+    // Check if machine ID is a valid UUID
+    if (!machineId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      console.log('⚠️ Machine ID is not a valid UUID:', machineId);
+      setError('Invalid machine ID format. Please check machine pairing.');
+      return false;
+    }
+
     setLoading(true);
     setError(null);
 

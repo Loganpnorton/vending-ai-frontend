@@ -234,11 +234,17 @@ const useMachineCheckin = (options: UseMachineCheckinOptions = {}) => {
       const result = await response.json();
       console.log('✅ Check-in successful:', result);
       
-      // Store machine token if provided in response
+      // Store machine token and machine ID if provided in response
       if (result.machine?.machine_token) {
         localStorage.setItem('machine_token', result.machine.machine_token);
         setMachineToken(result.machine.machine_token);
         console.log('🔑 Received machine token:', result.machine.machine_token);
+      }
+      
+      // Store the correct machine ID from the response
+      if (result.machine_id) {
+        localStorage.setItem('machine_id', result.machine_id);
+        console.log('🆔 Updated machine ID to:', result.machine_id);
       }
       
       setLastSuccessfulCheckin(new Date());

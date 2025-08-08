@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import KioskInterface from './KioskInterface';
 import MachinePairingScreen from './MachinePairingScreen';
+import useMachineCheckin from '../hooks/useMachineCheckin';
 
 const KioskScreen: React.FC = () => {
   const [machineId, setMachineId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Initialize machine check-in to get proper UUID
+  const { checkin } = useMachineCheckin({
+    intervalMinutes: 5,
+    enabled: false, // Don't auto-start, we'll trigger manually
+    autoRegister: true,
+  });
 
   useEffect(() => {
     // Check if machine is already paired
@@ -12,10 +20,39 @@ const KioskScreen: React.FC = () => {
     const storedMachineToken = localStorage.getItem('machine_token');
     
     if (storedMachineId && storedMachineToken) {
-      setMachineId(storedMachineId);
+      // If we have a machine ID that's not a UUID, trigger a check-in to get the proper UUID
+      if (!storedMachineId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        console.log('🔄 Machine ID is not a UUID, triggering check-in to get proper ID...');
+        checkin().then((success) => {
+          if (success) {
+            const newMachineId = localStorage.getItem('machine_id');
+            if (newMachineId && newMachineId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+              console.log('✅ Got proper UUID:', newMachineId);
+              setMachineId(newMachineId);
+            }
+          }
+          setIsLoading(false);
+        });
+      } else {
+        setMachineId(storedMachineId);
+        setIsLoading(false);
+      }
+    } else {
+      setIsLoading(false);
     }
+  }, [checkin]);
 
-    setIsLoading(false);
+  // Listen for machine ID updates from check-in
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'machine_id' && e.newValue) {
+        console.log('🔄 Machine ID updated from storage:', e.newValue);
+        setMachineId(e.newValue);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const handlePairingComplete = (machineId?: string) => {
