@@ -17,13 +17,15 @@ interface PairingData {
 }
 
 interface MachinePairingScreenProps {
-  onPairingComplete?: () => void;
+  onPairingComplete?: (machineId?: string) => void;
   initialPairingCode?: string | null;
+  isKioskMode?: boolean;
 }
 
 const MachinePairingScreen: React.FC<MachinePairingScreenProps> = ({ 
   onPairingComplete, 
-  initialPairingCode 
+  initialPairingCode,
+  isKioskMode = false
 }) => {
   const [pairingData, setPairingData] = useState<PairingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -107,7 +109,7 @@ const MachinePairingScreen: React.FC<MachinePairingScreenProps> = ({
         localStorage.setItem('machine_token', 'demo-machine-token');
         localStorage.removeItem('demo_start_time');
         setIsPolling(false);
-        onPairingComplete?.();
+        onPairingComplete?.('demo-machine-id');
       }
       return;
     }
@@ -143,7 +145,7 @@ const MachinePairingScreen: React.FC<MachinePairingScreenProps> = ({
           console.log('✅ Credentials stored, redirecting to product screen...');
           
           // Notify parent component to switch to product screen
-          onPairingComplete?.();
+          onPairingComplete?.(machineData.machine_id);
         } else {
           console.log('No machine data found yet, continuing to poll...');
         }
@@ -224,9 +226,14 @@ const MachinePairingScreen: React.FC<MachinePairingScreenProps> = ({
       <div className="max-w-2xl w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Machine Pairing</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">
+            {isKioskMode ? 'Vending Machine Setup' : 'Machine Pairing'}
+          </h1>
           <p className="text-gray-300 text-lg">
-            Scan this code or enter the pairing code in your dashboard to link this machine
+            {isKioskMode 
+              ? 'Scan this code with your admin device to activate this vending machine'
+              : 'Scan this code or enter the pairing code in your dashboard to link this machine'
+            }
           </p>
           {!supabase && (
             <div className="mt-4 bg-yellow-600 text-white px-4 py-2 rounded-lg inline-block">
